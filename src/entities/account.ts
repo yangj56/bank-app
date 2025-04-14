@@ -2,20 +2,18 @@ import { Transaction, TransactionType } from './transaction';
 
 export class Account {
   id: string;
-  accountType: string;
   transactions: Transaction[];
 
-  constructor(id: string, accountType: string) {
+  constructor(id: string) {
     this.id = id;
-    this.accountType = accountType;
     this.transactions = [];
   }
 
-  public deposit(amount: number) {
+  public deposit(amount: number, date: string) {
     const getLatestBalance = this.transactions[this.transactions.length - 1];
     this.transactions.push(
       new Transaction(
-        new Date().toISOString(),
+        date,
         amount,
         TransactionType.DEPOSIT,
         getLatestBalance.balance + amount,
@@ -23,11 +21,11 @@ export class Account {
     );
   }
 
-  public withdraw(amount: number) {
+  public withdraw(amount: number, date: string) {
     const getLatestBalance = this.transactions[this.transactions.length - 1];
     this.transactions.push(
       new Transaction(
-        new Date().toISOString(),
+        date,
         amount,
         TransactionType.WITHDRAWAL,
         getLatestBalance.balance - amount,

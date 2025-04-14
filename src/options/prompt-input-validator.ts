@@ -84,7 +84,129 @@ export function bankAccountInputValidator(
   };
 }
 
+export function interestRuleInputValidator(
+  input: string,
+): ValidatorResult<[string, string, number] | undefined> {
+  const parts = input.trim().split(' ');
+  if (parts.length === 3) {
+    const date = parts[0];
+    const ruleId = parts[1];
+    const rate = parts[2];
+
+    const dateValidator = dateInputValidator(date);
+    if (dateValidator.isError) {
+      return {
+        isError: true,
+        errorMessage: dateValidator.errorMessage,
+        checkedInput: undefined,
+      };
+    }
+
+    const ruleIdValidator = stringInputValidator(ruleId);
+    if (ruleIdValidator.isError) {
+      return {
+        isError: true,
+        errorMessage: ruleIdValidator.errorMessage,
+        checkedInput: undefined,
+      };
+    }
+
+    const rateValidator = amountInputValidator(rate);
+    if (rateValidator.isError) {
+      return {
+        isError: true,
+        errorMessage: rateValidator.errorMessage,
+        checkedInput: undefined,
+      };
+    }
+    return {
+      isError: false,
+      errorMessage: '',
+      checkedInput: [
+        dateValidator.checkedInput,
+        ruleIdValidator.checkedInput,
+        rateValidator.checkedInput,
+      ],
+    };
+  }
+  return {
+    isError: true,
+    errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+    checkedInput: undefined,
+  };
+}
+
+export function printStatementInputValidator(
+  input: string,
+): ValidatorResult<[string, string] | undefined> {
+  const parts = input.trim().split(' ');
+  if (parts.length === 2) {
+    const account = parts[0];
+    const yearMonth = parts[1];
+
+    const accountValidator = accountIdInputValidator(account);
+    if (accountValidator.isError) {
+      return {
+        isError: true,
+        errorMessage: accountValidator.errorMessage,
+        checkedInput: undefined,
+      };
+    }
+    const yearMonthValidator = yearMonthInputValidator(yearMonth);
+    if (yearMonthValidator.isError) {
+      return {
+        isError: true,
+        errorMessage: yearMonthValidator.errorMessage,
+        checkedInput: undefined,
+      };
+    }
+    return {
+      isError: false,
+      errorMessage: '',
+      checkedInput: [
+        accountValidator.checkedInput,
+        yearMonthValidator.checkedInput,
+      ],
+    };
+  }
+  return {
+    isError: true,
+    errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+    checkedInput: undefined,
+  };
+}
+
 export function dateInputValidator(input: string): ValidatorResult<string> {
+  const date = new Date(input);
+  if (isNaN(date.getTime())) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: '',
+    };
+  }
+  if (date.toISOString().split('T')[0] !== SYSTEM_CONFIG.DATE_FORMAT) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: '',
+    };
+  }
+  return {
+    isError: false,
+    errorMessage: '',
+    checkedInput: input,
+  };
+}
+
+export function stringInputValidator(input: string): ValidatorResult<string> {
+  if (input.length === 0) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: '',
+    };
+  }
   return {
     isError: false,
     errorMessage: '',
@@ -142,5 +264,55 @@ export function amountInputValidator(input: string): ValidatorResult<number> {
     isError: false,
     errorMessage: '',
     checkedInput: amount,
+  };
+}
+
+export function rateInputValidator(input: string): ValidatorResult<number> {
+  const rate = parseFloat(input);
+  if (isNaN(rate)) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: 0,
+    };
+  }
+  if (rate < 0 || rate > 100) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: 0,
+    };
+  }
+
+  return {
+    isError: false,
+    errorMessage: '',
+    checkedInput: rate,
+  };
+}
+
+export function yearMonthInputValidator(
+  input: string,
+): ValidatorResult<string> {
+  const yearMonth = input.trim();
+  if (yearMonth.length !== 6) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: '',
+    };
+  }
+  const date = new Date(`${yearMonth}01`);
+  if (isNaN(date.getTime())) {
+    return {
+      isError: true,
+      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      checkedInput: '',
+    };
+  }
+  return {
+    isError: false,
+    errorMessage: '',
+    checkedInput: input,
   };
 }

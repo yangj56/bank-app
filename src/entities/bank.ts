@@ -21,15 +21,36 @@ export class Bank {
     this.interestRules = [];
   }
 
-  addInterestRule(interestRule: InterestRule) {
+  addTransaction(
+    date: string,
+    accountId: string,
+    type: TransactionType,
+    amount: number,
+  ) {
+    const account = this.accounts.find((account) => account.id === accountId);
+    if (!account) {
+      if (type === TransactionType.DEPOSIT) {
+        const newAccount = new Account(accountId);
+        newAccount.deposit(amount, date);
+        this.accounts.push(newAccount);
+      } else {
+        throw new SystemError('First transaction must be a deposit');
+      }
+    } else {
+      if (type === TransactionType.DEPOSIT) {
+        account.deposit(amount, date);
+      } else {
+        account.withdraw(amount, date);
+      }
+    }
+  }
+
+  addInterestRule(date: string, ruleId: string, rate: number) {
+    const interestRule = new InterestRule(date, ruleId, rate);
     this.interestRules.push(interestRule);
   }
 
-  addAccount(account: Account) {
-    this.accounts.push(account);
-  }
-
-  calculateInterest(accountID: string, period: string) {
+  printStatement(accountID: string, period: string) {
     const account = this.accounts.find((account) => account.id === accountID);
     if (!account) {
       throw new SystemError('Account not found');
