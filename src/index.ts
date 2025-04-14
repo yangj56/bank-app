@@ -22,7 +22,7 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
     let continuePrompting = true;
     while (continuePrompting) {
       const optionInput = await inputQuestionRepromptor(
-        `Welcome to AwesomeGIC Bank! What would you like to do?`,
+        `Welcome to AwesomeGIC Bank! What would you like to do?s`,
         optionInputValidator,
       );
       switch (optionInput) {
