@@ -27,6 +27,9 @@ export function optionInputValidator(input: string): ValidatorResult<'T' | 'I' |
 export function addTransactionInputValidator(
   input: string,
 ): ValidatorResult<[string, string, TransactionType, number] | undefined> {
+  if (input === '') {
+    return { isError: false, errorMessage: '', checkedInput: undefined };
+  }
   const parts = input.trim().split(' ');
   if (parts.length === 4) {
     const date = parts[0];
@@ -85,6 +88,9 @@ export function addTransactionInputValidator(
 }
 
 export function addInterestRuleInputValidator(input: string): ValidatorResult<[string, string, number] | undefined> {
+  if (input === '') {
+    return { isError: false, errorMessage: '', checkedInput: undefined };
+  }
   const parts = input.trim().split(' ');
   if (parts.length === 3) {
     const date = parts[0];
@@ -131,6 +137,9 @@ export function addInterestRuleInputValidator(input: string): ValidatorResult<[s
 }
 
 export function printStatementInputValidator(input: string): ValidatorResult<[string, string] | undefined> {
+  if (input === '') {
+    return { isError: false, errorMessage: '', checkedInput: undefined };
+  }
   const parts = input.trim().split(' ');
   if (parts.length === 2) {
     const account = parts[0];

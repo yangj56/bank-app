@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "clean": "rm -rf dist node_modules package-lock.json coverage .husky/_",
+    "clean": "rm -rf dist node_modules package-lock.json coverage",
     "build": "rollup -c",
     "test": "jest --verbose",
     "test:coverage": "jest --coverage",

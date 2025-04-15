@@ -70,11 +70,6 @@ export class Bank {
     if (this.ruleIdExisted(ruleId)) {
       throw new SystemError('Rule ID already exists');
     }
-    this.interestRules.forEach((rule) => {
-      if (rule.date === date) {
-        this.interestRules.delete(date);
-      }
-    });
     const interestRule = new InterestRule(date, ruleId, rate);
     if (this.interestRules.has(date)) {
       this.interestRules.set(date, interestRule);
