@@ -34,7 +34,15 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
             bankAccountInputValidator,
           );
           if (input) {
-            bank.addTransaction(...input);
+            try {
+              bank.addTransaction(...input);
+            } catch (error) {
+              if (error instanceof SystemError) {
+                console.log(error.message);
+              } else {
+                console.error(error);
+              }
+            }
           }
           break;
         }

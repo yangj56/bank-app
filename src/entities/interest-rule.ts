@@ -1,10 +1,10 @@
 export class InterestRule {
-  id: string;
+  ruleId: string;
   rate: number;
   date: string;
 
   constructor(date: string, ruleId: string, rate: number) {
-    this.id = ruleId;
+    this.ruleId = ruleId;
     this.rate = rate;
     this.date = date;
   }

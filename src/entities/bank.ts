@@ -1,4 +1,5 @@
 import { SystemError } from '../error';
+import { formatDate } from '../utils/date-utils';
 import { Account } from './account';
 import { InterestRule } from './interest-rule';
 import { TransactionType } from './transaction';
@@ -13,20 +14,15 @@ type CollapseTransactions = {
 export class Bank {
   name: string;
   accounts: Account[];
-  interestRules: InterestRule[];
+  interestRules: Map<string, InterestRule>;
 
   constructor(name: string) {
     this.name = name;
     this.accounts = [];
-    this.interestRules = [];
+    this.interestRules = new Map();
   }
 
-  addTransaction(
-    date: string,
-    accountId: string,
-    type: TransactionType,
-    amount: number,
-  ) {
+  addTransaction(date: string, accountId: string, type: TransactionType, amount: number) {
     const account = this.accounts.find((account) => account.id === accountId);
     if (!account) {
       if (type === TransactionType.DEPOSIT) {
@@ -46,8 +42,20 @@ export class Bank {
   }
 
   addInterestRule(date: string, ruleId: string, rate: number) {
+    if (this.ruleIdExisted(ruleId)) {
+      throw new SystemError('Rule ID already exists');
+    }
+    this.interestRules.forEach((rule) => {
+      if (rule.date === date) {
+        this.interestRules.delete(date);
+      }
+    });
     const interestRule = new InterestRule(date, ruleId, rate);
-    this.interestRules.push(interestRule);
+    if (this.interestRules.has(date)) {
+      this.interestRules.set(date, interestRule);
+    } else {
+      this.interestRules = this.insertByOrder(this.interestRules, date, interestRule);
+    }
   }
 
   printStatement(accountID: string, period: string) {
@@ -62,14 +70,13 @@ export class Bank {
       }
     });
 
+    console.log(transactions);
+
     const collapseTransactions: CollapseTransactions[] = [];
     for (let i = 1; i < transactions.length; i++) {
       const previousTransaction = transactions[i - 1];
       const currentTransaction = transactions[i];
-      if (
-        previousTransaction &&
-        previousTransaction.date === currentTransaction.date
-      ) {
+      if (previousTransaction && previousTransaction.date === currentTransaction.date) {
         collapseTransactions.pop();
       }
       collapseTransactions.push({
@@ -80,7 +87,7 @@ export class Bank {
       });
     }
 
-    const sortedInterestRules = this.interestRules.sort(
+    const sortedInterestRules = Array.from(this.interestRules.values()).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
 
@@ -103,13 +110,9 @@ export class Bank {
           throw new SystemError('Interest rate not found');
         }
         if (previousInterestRate) {
-          const days = this.dateDifference(
-            previousInterestRate.date,
-            currentInterestRate.date,
-          );
+          const days = this.dateDifference(previousInterestRate.date, currentInterestRate.date);
           if (currentInterestRate.date < currentTransaction.date) {
-            const amount =
-              previousTransaction.balance * days * previousInterestRate.rate;
+            const amount = previousTransaction.balance * days * previousInterestRate.rate;
             interestRate = interestRate + amount;
           }
         }
@@ -126,25 +129,14 @@ export class Bank {
   private dateIsInMonth(checkDate: string, periodMonth: string): boolean {
     const date = new Date(checkDate);
     const period = new Date(periodMonth);
-    return (
-      date.getMonth() === period.getMonth() &&
-      date.getFullYear() === period.getFullYear()
-    );
+    return date.getMonth() === period.getMonth() && date.getFullYear() === period.getFullYear();
   }
 
-  private findAllInterestInPeriod(
-    sortedInterestRules: InterestRule[],
-    startDate: string,
-    endDate: string,
-  ) {
+  private findAllInterestInPeriod(sortedInterestRules: InterestRule[], startDate: string, endDate: string) {
     let firstInterestRule: InterestRule | undefined;
     const interestRules = sortedInterestRules.filter((rule, index) => {
       if (rule.date >= startDate && rule.date <= endDate) {
-        if (
-          rule.date > startDate &&
-          firstInterestRule === undefined &&
-          index !== 0
-        ) {
+        if (rule.date > startDate && firstInterestRule === undefined && index !== 0) {
           firstInterestRule = sortedInterestRules[index - 1];
         }
         return rule;
@@ -154,5 +146,27 @@ export class Bank {
       interestRules.unshift(firstInterestRule);
     }
     return interestRules;
+  }
+
+  private insertByOrder(map: Map<string, InterestRule>, newKey: string, newValue: InterestRule) {
+    const entries = Array.from(map.entries());
+    const insertIndex = entries.findIndex(([key]) => {
+      const currentDate = formatDate(key);
+      const newDate = formatDate(newKey);
+      return newDate < currentDate;
+    });
+    const finalInsertIndex = insertIndex === -1 ? entries.length : insertIndex;
+    const frontEntries = entries.slice(0, finalInsertIndex);
+    const backEntries = entries.slice(finalInsertIndex);
+    return new Map([...frontEntries, [newKey, newValue], ...backEntries]);
+  }
+
+  private ruleIdExisted(ruleId: string) {
+    for (let value of this.interestRules.values()) {
+      if (value.ruleId === ruleId) {
+        return true;
+      }
+    }
+    return false;
   }
 }
