@@ -14,8 +14,15 @@ export class Transaction {
   previousBalance: number;
   createdAt: string;
 
-  constructor(date: string, amount: number, type: TransactionType, balance: number, previousBalance: number) {
-    this.id = getNextTransactionId(date);
+  constructor(
+    date: string,
+    amount: number,
+    type: TransactionType,
+    balance: number,
+    previousBalance: number,
+    counter: number,
+  ) {
+    this.id = getNextTransactionId(date, counter + 1);
     this.date = date;
     this.amount = amount;
     this.type = type;

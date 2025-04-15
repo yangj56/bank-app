@@ -59,5 +59,23 @@ describe('adding transactions', () => {
     bank.addTransaction('20210103', '1234', TransactionType.DEPOSIT, 300);
     bank.addTransaction('20200104', '1235', TransactionType.DEPOSIT, 100);
     bank.addTransaction('20200105', '1235', TransactionType.DEPOSIT, 100);
+    expect(bank.accounts[0].transactions.length).toBe(3);
+  });
+
+  it('should add transactions and counter resets every month', () => {
+    const bank = new Bank('AwesomeGIC Bank');
+    bank.addTransaction('20210101', '1234', TransactionType.DEPOSIT, 1000);
+    bank.addTransaction('20210102', '1234', TransactionType.WITHDRAWAL, 100);
+    bank.addTransaction('20210103', '1234', TransactionType.DEPOSIT, 300);
+    bank.addTransaction('20200304', '1235', TransactionType.DEPOSIT, 100);
+    bank.addTransaction('20200305', '1235', TransactionType.DEPOSIT, 100);
+    bank.addTransaction('20200405', '1235', TransactionType.DEPOSIT, 100);
+    bank.addTransaction('20200505', '1235', TransactionType.DEPOSIT, 100);
+
+    expect(bank.accounts[0].transactions[2].id).toBe('20210103-03');
+    expect(bank.accounts[1].transactions[1].id).toBe('20200305-02');
+    expect(bank.accounts[1].transactions[2].id).toBe('20200405-01');
+    expect(bank.accounts[1].transactions[3].id).toBe('20200505-01');
+    expect(bank.accounts[0].transactions.length).toBe(3);
   });
 });

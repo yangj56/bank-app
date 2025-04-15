@@ -12,24 +12,10 @@ export class ValidationError extends AppError {
   }
 }
 
-export class CinemaError extends AppError {
+export class BankError extends AppError {
   constructor(message: string) {
     super(message);
-    this.name = 'CinemaError';
-  }
-}
-
-export class BookingError extends AppError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'BookingError';
-  }
-}
-
-export class SeatAssignmentError extends AppError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'SeatAssignmentError';
+    this.name = 'BankError';
   }
 }
 

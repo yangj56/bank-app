@@ -11,8 +11,9 @@ import {
 
 async function promptBankSystemSetup(): Promise<void> {
   try {
-    const cinema = new Bank(SYSTEM_CONFIG.SYSTEM_NAME);
-    await promptBankingOptions(cinema);
+    const bank = new Bank(SYSTEM_CONFIG.SYSTEM_NAME);
+    console.log(`Welcome to ${SYSTEM_CONFIG.SYSTEM_NAME}!`);
+    await promptBankingOptions(bank);
   } catch (error) {
     console.error(error);
     throw new SystemError('Error setting up Banking System');
@@ -20,11 +21,12 @@ async function promptBankSystemSetup(): Promise<void> {
 }
 
 async function promptBankingOptions(bank: Bank): Promise<void> {
-  try {
-    let continuePrompting = true;
-    while (continuePrompting) {
+  let continuePrompting = true;
+  let checkMessage = `What would you like to do?`;
+  while (continuePrompting) {
+    try {
       const optionInput = await inputQuestionRepromptor(
-        `Welcome to ${SYSTEM_CONFIG.SYSTEM_NAME}! What would you like to do?`,
+        `${checkMessage}\n[T] Input transactions\n[I] Define interest rules\n[P] Print statement\n[Q] Quit`,
         optionInputValidator,
       );
       switch (optionInput) {
@@ -34,15 +36,8 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
             addTransactionInputValidator,
           );
           if (input) {
-            try {
-              bank.addTransaction(...input);
-            } catch (error) {
-              if (error instanceof SystemError) {
-                console.log(error.message);
-              } else {
-                console.error(error);
-              }
-            }
+            const accountId = bank.addTransaction(...input);
+            bank.printTransactions(accountId);
           }
           break;
         }
@@ -53,6 +48,7 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
           );
           if (input) {
             bank.addInterestRule(...input);
+            bank.printInterestRules();
           }
           break;
         }
@@ -63,8 +59,13 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
           );
           if (input) {
             const result = bank.calculatePeriodInterest(...input);
-
-            console.log(`Interest for ${input[0]} in ${input[1]} is ${result}`);
+            bank.printStatement(
+              result.transactions,
+              result.interestRate,
+              result.amountWithInterest,
+              result.accountID,
+              result.period,
+            );
           }
           break;
         }
@@ -72,13 +73,17 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
           continuePrompting = false;
           break;
       }
+      checkMessage = `Is there anything else you'd like to do?`;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(`${error.message}`);
+      } else {
+        console.log(`${error}`);
+      }
     }
-    console.log(`Thank you for banking with ${SYSTEM_CONFIG.SYSTEM_NAME}.\nHave a nice day!`);
-    rl.close();
-  } catch (error) {
-    console.error(error);
-    throw new SystemError('Error prompting banking options');
   }
+  console.log(`Thank you for banking with ${SYSTEM_CONFIG.SYSTEM_NAME}.\nHave a nice day!`);
+  rl.close();
 }
 
 promptBankSystemSetup();

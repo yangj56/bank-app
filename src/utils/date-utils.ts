@@ -18,30 +18,28 @@ export function nextDay(date: Date) {
   return nextDay;
 }
 
-/**
- * Formats a number with exactly two decimal places and returns it as a string
- * @param value The number to format
- * @returns A string representation of the number with exactly two decimal places
- */
-export function displayDecimal(value: number): string {
-  return value.toFixed(2);
-}
-
 export function formatDate(dateStr: string) {
-  if (!/^\d{8}$/.test(dateStr)) {
-    throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStr}`);
+  try {
+    if (!/^\d{8}$/.test(dateStr)) {
+      throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT}`);
+    }
+
+    const year = +dateStr.slice(0, 4);
+    const month = +dateStr.slice(4, 6);
+    const day = +dateStr.slice(6, 8);
+
+    const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) {
+      throw new ValidationError(`Date is not valid, must be in the format ${SYSTEM_CONFIG.DATE_FORMAT}`);
+    }
+    return date;
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      throw error;
+    }
+    throw new ValidationError(`Invalid date: ${dateStr}`);
   }
-
-  const year = +dateStr.slice(0, 4);
-  const month = +dateStr.slice(4, 6);
-  const day = +dateStr.slice(6, 8);
-
-  const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) {
-    throw new ValidationError(`Date is not valid, must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStr}`);
-  }
-  return date;
 }
 
 export function isDayInSameYearMonth(dateStrDay: string, dateStrMonth: string) {
@@ -51,6 +49,7 @@ export function isDayInSameYearMonth(dateStrDay: string, dateStrMonth: string) {
   if (!/^\d{8}$/.test(dateStrDay)) {
     throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStrDay}`);
   }
+
   const periodYear = +dateStrMonth.slice(0, 4);
   const periodMonth = +dateStrMonth.slice(4, 6);
 
@@ -80,9 +79,7 @@ export function isLastDayOfMonth(dateStr: string, period: string) {
   };
 }
 
-export function dateDifference(startDate: Date, endDate: Date, mark?: string): number {
-  console.log(`startDate ${mark}`, startDate);
-  console.log(`endDate`, endDate);
+export function dateDifference(startDate: Date, endDate: Date): number {
   const timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
   return Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
 }
@@ -92,4 +89,8 @@ export function getLastDayOfMonth(date: string) {
   const month = +date.slice(4, 6);
   const lastDayOfMonth = new Date(year, month, 0).getDate();
   return `${date.slice(0, 4)}${date.slice(4, 6)}${lastDayOfMonth}`;
+}
+
+export function dateGetPeriod(date: string) {
+  return `${date.slice(0, 4)}${date.slice(4, 6)}`;
 }

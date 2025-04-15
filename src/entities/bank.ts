@@ -3,7 +3,7 @@ import { SystemError } from '../error';
 import {
   checkLeapYear,
   dateDifference,
-  displayDecimal,
+  dateGetPeriod,
   formatDate,
   getLastDayOfMonth,
   isDayInSameYearMonth,
@@ -11,7 +11,7 @@ import {
   isLastDayOfMonth,
   previousDay,
 } from '../utils/date-utils';
-import { round } from '../utils/number-util';
+import { round, displayDecimal } from '../utils/number-util';
 import { Account } from './account';
 import { InterestRule } from './interest-rule';
 import { Transaction, TransactionType } from './transaction';
@@ -38,26 +38,35 @@ export class Bank {
     this.interestRules = new Map();
   }
 
-  addTransaction(date: string, accountId: string, type: TransactionType, amount: number) {
+  public addTransaction(date: string, accountId: string, type: TransactionType, amount: number) {
     const account = this.accounts.find((account) => account.id === accountId);
+    const period = dateGetPeriod(date);
+    const transactions = account?.transactions.filter((transaction) => {
+      if (isDayInSameYearMonth(transaction.date, period)) {
+        return transaction;
+      }
+    });
+    const transactionCount = transactions?.length || 0;
+
     if (!account) {
       if (type === TransactionType.DEPOSIT) {
         const newAccount = new Account(accountId);
-        newAccount.deposit(amount, date);
+        newAccount.deposit(amount, date, transactionCount);
         this.accounts.push(newAccount);
       } else {
         throw new SystemError('First transaction must be a deposit');
       }
     } else {
       if (type === TransactionType.DEPOSIT) {
-        account.deposit(amount, date);
+        account.deposit(amount, date, transactionCount);
       } else {
-        account.withdraw(amount, date);
+        account.withdraw(amount, date, transactionCount);
       }
     }
+    return accountId;
   }
 
-  addInterestRule(date: string, ruleId: string, rate: number) {
+  public addInterestRule(date: string, ruleId: string, rate: number) {
     if (this.ruleIdExisted(ruleId)) {
       throw new SystemError('Rule ID already exists');
     }
@@ -85,7 +94,6 @@ export class Bank {
         return transaction;
       }
     });
-    console.log(`transactions`, transactions);
     let calculatedTransactions = [...transactions];
     if (calculatedTransactions.length === 0) {
       for (let i = 0; i < account.transactions.length; i++) {
@@ -100,22 +108,50 @@ export class Bank {
         }
       }
     }
-    console.log(`transactions`, transactions);
     if (calculatedTransactions.length === 0) {
       return {
+        transactions,
         interestRate: 0,
         amountWithInterest: 0,
-        transactions: [],
+        accountID,
+        period,
       };
     }
     const monthBalanceCheckpoint = this.generateMonthBalanceCheckpoint(calculatedTransactions, period);
-    console.log(`monthBalanceCheckpoint`, monthBalanceCheckpoint);
     const { interestRate, amountWithInterest } = this.calculateInterestRateValue(monthBalanceCheckpoint, period);
     return {
+      transactions,
       interestRate,
       amountWithInterest,
-      transactions,
+      accountID,
+      period,
     };
+  }
+
+  public printTransactions(accountId: string) {
+    const account = this.accounts.find((account) => account.id === accountId);
+    if (!account) {
+      throw new SystemError('Account not found');
+    }
+    const transactions = account.transactions;
+    let display = `Account: ${accountId}\n`;
+    display += `| ${'Date'.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${'Txn Id'.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${'Type'.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${'Amount'.padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} |\n`;
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
+      display += `| ${transaction.date.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${transaction.id.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${transaction.type.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${displayDecimal(transaction.amount, 2).toString().padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} |\n`;
+    }
+    console.log(display);
+  }
+
+  public printInterestRules() {
+    const interestRules = Array.from(this.interestRules.values());
+    let display = `Interest Rules:\n`;
+    display += `| ${'Date'.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${'RuleId'.padEnd(SYSTEM_CONFIG.RULE_PADDING)} | ${'Rate (%)'.padStart(SYSTEM_CONFIG.RATE_PADDING)} |\n`;
+    for (let i = 0; i < interestRules.length; i++) {
+      const interestRule = interestRules[i];
+      display += `| ${interestRule.date.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${interestRule.ruleId.padEnd(SYSTEM_CONFIG.RULE_PADDING)} | ${displayDecimal(interestRule.rate, 2).toString().padStart(SYSTEM_CONFIG.RATE_PADDING)} |\n`;
+    }
+    console.log(display);
   }
 
   public printStatement(
@@ -126,13 +162,13 @@ export class Bank {
     period: string,
   ) {
     const lastDay = getLastDayOfMonth(period);
-    let display = `Account: ${accountID}`;
-    display += `| ${'Date'.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${'Txn Id'.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${'Type'.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${'Amount'.padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${'Balance'.padStart(SYSTEM_CONFIG.BALANCE_PADDING)}\n`;
+    let display = `Account: ${accountID}\n`;
+    display += `| ${'Date'.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${'Txn Id'.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${'Type'.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${'Amount'.padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${'Balance'.padStart(SYSTEM_CONFIG.BALANCE_PADDING)} |\n`;
     for (let i = 0; i < transactions.length; i++) {
       const transaction = transactions[i];
-      display += `| ${transaction.date.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${transaction.id.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${transaction.type.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${displayDecimal(transaction.amount).toString().padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${displayDecimal(transaction.balance).toString().padStart(SYSTEM_CONFIG.BALANCE_PADDING)}\n`;
+      display += `| ${transaction.date.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${transaction.id.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${transaction.type.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${displayDecimal(transaction.amount, 2).toString().padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${displayDecimal(transaction.balance, 2).toString().padStart(SYSTEM_CONFIG.BALANCE_PADDING)} |\n`;
     }
-    display += `| ${lastDay.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${''.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${'I'.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${interestRate.toString().padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${amountWithInterest.toString().padStart(SYSTEM_CONFIG.BALANCE_PADDING)}\n`;
+    display += `| ${lastDay.padEnd(SYSTEM_CONFIG.DATE_PADDING)} | ${''.padEnd(SYSTEM_CONFIG.TRANSACTION_PADDING)} | ${'I'.padEnd(SYSTEM_CONFIG.TRANSACTION_TYPE_PADDING)} | ${interestRate.toString().padStart(SYSTEM_CONFIG.AMOUNT_PADDING)} | ${amountWithInterest.toString().padStart(SYSTEM_CONFIG.BALANCE_PADDING)} |\n`;
     console.log(display);
   }
 
@@ -140,7 +176,6 @@ export class Bank {
     const sortedInterestRules = Array.from(this.interestRules.values());
     let interestRate = 0;
     let fillerInterestRate = this.findStartMonthInterestRate(sortedInterestRules, period);
-    console.log(`startMonthInterestRate`, fillerInterestRate);
     for (let i = 1; i < monthBalanceCheckpoint.length; i++) {
       const previousTransaction = monthBalanceCheckpoint[i - 1];
       const currentTransaction = monthBalanceCheckpoint[i];
@@ -150,13 +185,12 @@ export class Bank {
       const startDate = formatDate(previousTransaction.date);
       const endDate = formatDate(currentTransaction.date);
       const checkInterestInPeriod = this.findAllInterestInPeriod(sortedInterestRules, startDate, endDate);
-      console.log(`checkInterestInPeriod`, checkInterestInPeriod);
       if (checkInterestInPeriod.length > 0) {
         for (let j = 0; j < checkInterestInPeriod.length; j++) {
           const currentInterestRate = checkInterestInPeriod[j];
           const interestDate = formatDate(currentInterestRate.date);
           if (j === 0) {
-            const startDaysDiff = dateDifference(startDate, previousDay(interestDate), 'start');
+            const startDaysDiff = dateDifference(startDate, previousDay(interestDate));
             const amount = this.calculateInterestByDays(
               previousTransaction.balance,
               startDaysDiff,
@@ -166,7 +200,7 @@ export class Bank {
             fillerInterestRate = currentInterestRate.rate;
           }
           if (j === checkInterestInPeriod.length - 1) {
-            const endDaysDiff = dateDifference(interestDate, previousDay(endDate), 'end');
+            const endDaysDiff = dateDifference(interestDate, previousDay(endDate));
             const amount = this.calculateInterestByDays(
               previousTransaction.balance,
               endDaysDiff,
@@ -178,7 +212,7 @@ export class Bank {
             const nextInterestRate = checkInterestInPeriod[j + 1];
             if (nextInterestRate) {
               const nextInterestDate = formatDate(nextInterestRate.date);
-              const daysDiff = dateDifference(interestDate, previousDay(nextInterestDate), 'middle');
+              const daysDiff = dateDifference(interestDate, previousDay(nextInterestDate));
               const amount = this.calculateInterestByDays(
                 previousTransaction.balance,
                 daysDiff,
@@ -190,13 +224,12 @@ export class Bank {
           }
         }
       } else {
-        const daysDiff = dateDifference(startDate, endDate, 'last');
+        const daysDiff = dateDifference(startDate, endDate);
         const amount = this.calculateInterestByDays(previousTransaction.balance, daysDiff, fillerInterestRate);
         interestRate += amount;
       }
     }
     const isPeriodLeapYear = checkLeapYear(period);
-    console.log(`isPeriodLeapYear`, isPeriodLeapYear);
     const roundedInterestRate = round(interestRate / (isPeriodLeapYear ? 366 : 365), 2);
     const amountWithInterest = monthBalanceCheckpoint[monthBalanceCheckpoint.length - 1].balance + roundedInterestRate;
     return {
@@ -206,7 +239,6 @@ export class Bank {
   }
 
   private calculateInterestByDays(amount: number, days: number, rate: number) {
-    console.log(`amount ${amount} days ${days} rate ${rate}`);
     return amount * days * (rate / 100);
   }
 

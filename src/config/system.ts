@@ -4,7 +4,7 @@ export const SYSTEM_CONFIG = {
   INTEREST_RULE_ID_LENGTH: 4,
   INTEREST_RULE_ID_PREFIX: 'TAX',
   SYSTEM_NAME: 'AwesomeGIC Bank',
-  TRANSACTION_ID_LENGTH: 4,
+  TRANSACTION_ID_LENGTH: 2,
   GO_BACK_STATEMENT: '(or enter blank to go back to main menu):',
   DATE_PADDING: 8,
   TRANSACTION_PADDING: 13,
@@ -12,6 +12,8 @@ export const SYSTEM_CONFIG = {
   AMOUNT_PADDING: 6,
   BALANCE_PADDING: 7,
   DEFAULT_INTEREST_RATE: 1,
+  RULE_PADDING: 6,
+  RATE_PADDING: 8,
 } as const;
 
 export const SYSTEM_ERRORS = {

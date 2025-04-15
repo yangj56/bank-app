@@ -13,8 +13,9 @@ export function optionInputValidator(input: string): ValidatorResult<'T' | 'I' |
   if (input === '') {
     return { isError: false, errorMessage: '', checkedInput: undefined };
   }
-  if (input === 'T' || input === 'I' || input === 'P' || input === 'Q') {
-    return { isError: false, errorMessage: '', checkedInput: input };
+  const upperCaseInput = input.toUpperCase();
+  if (upperCaseInput === 'T' || upperCaseInput === 'I' || upperCaseInput === 'P' || upperCaseInput === 'Q') {
+    return { isError: false, errorMessage: '', checkedInput: upperCaseInput };
   }
   return {
     isError: true,
@@ -108,7 +109,7 @@ export function addInterestRuleInputValidator(input: string): ValidatorResult<[s
       };
     }
 
-    const rateValidator = amountInputValidator(rate);
+    const rateValidator = rateInputValidator(rate);
     if (rateValidator.isError) {
       return {
         isError: true,
@@ -219,7 +220,8 @@ function accountIdInputValidator(input: string): ValidatorResult<string> {
 }
 
 function transactionTypeInputValidator(input: string): ValidatorResult<TransactionType> {
-  if (input !== TransactionType.DEPOSIT && input !== TransactionType.WITHDRAWAL) {
+  const upperCaseInput = input.toUpperCase();
+  if (upperCaseInput !== TransactionType.DEPOSIT && upperCaseInput !== TransactionType.WITHDRAWAL) {
     return {
       isError: true,
       errorMessage: `Invalid transaction type: ${input}`,
@@ -229,7 +231,7 @@ function transactionTypeInputValidator(input: string): ValidatorResult<Transacti
   return {
     isError: false,
     errorMessage: '',
-    checkedInput: input,
+    checkedInput: upperCaseInput,
   };
 }
 
@@ -249,7 +251,7 @@ function amountInputValidator(input: string): ValidatorResult<number> {
   };
 }
 
-export function rateInputValidator(input: string): ValidatorResult<number> {
+function rateInputValidator(input: string): ValidatorResult<number> {
   const rate = parseFloat(input);
   if (isNaN(rate)) {
     return {
