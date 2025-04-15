@@ -12,7 +12,6 @@ import {
 async function promptBankSystemSetup(): Promise<void> {
   try {
     const bank = new Bank(SYSTEM_CONFIG.SYSTEM_NAME);
-    console.log(`Welcome to ${SYSTEM_CONFIG.SYSTEM_NAME}!`);
     await promptBankingOptions(bank);
   } catch (error) {
     console.error(error);
@@ -22,7 +21,7 @@ async function promptBankSystemSetup(): Promise<void> {
 
 async function promptBankingOptions(bank: Bank): Promise<void> {
   let continuePrompting = true;
-  let checkMessage = `What would you like to do?`;
+  let checkMessage = `Welcome to ${SYSTEM_CONFIG.SYSTEM_NAME}! What would you like to do?`;
   while (continuePrompting) {
     try {
       const optionInput = await inputQuestionRepromptor(
