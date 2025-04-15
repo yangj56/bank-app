@@ -11,19 +11,16 @@ export class Transaction {
   amount: number;
   type: TransactionType;
   balance: number;
+  previousBalance: number;
   createdAt: string;
 
-  constructor(
-    date: string,
-    amount: number,
-    type: TransactionType,
-    balance: number,
-  ) {
+  constructor(date: string, amount: number, type: TransactionType, balance: number, previousBalance: number) {
     this.id = getNextTransactionId(date);
     this.date = date;
     this.amount = amount;
     this.type = type;
     this.balance = balance;
+    this.previousBalance = previousBalance;
     this.createdAt = new Date().toISOString();
   }
 }

@@ -24,7 +24,7 @@ export class Account {
     }
 
     const newBalance = this.balance + amount;
-    this.transactions.push(new Transaction(date, amount, TransactionType.DEPOSIT, newBalance));
+    this.transactions.push(new Transaction(date, amount, TransactionType.DEPOSIT, newBalance, this.balance));
     this.balance = newBalance;
   }
 
@@ -41,7 +41,7 @@ export class Account {
     if (newBalance < 0) {
       throw new SystemError('Insufficient balance');
     }
-    this.transactions.push(new Transaction(date, amount, TransactionType.WITHDRAWAL, newBalance));
+    this.transactions.push(new Transaction(date, amount, TransactionType.WITHDRAWAL, newBalance, this.balance));
     this.balance = newBalance;
   }
 
