@@ -8,8 +8,4 @@ export class InterestRule {
     this.rate = rate;
     this.date = date;
   }
-
-  public calculateInterest(amount: number) {
-    return amount * this.rate;
-  }
 }
