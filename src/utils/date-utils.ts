@@ -18,6 +18,15 @@ export function nextDay(date: Date) {
   return nextDay;
 }
 
+/**
+ * Formats a number with exactly two decimal places and returns it as a string
+ * @param value The number to format
+ * @returns A string representation of the number with exactly two decimal places
+ */
+export function displayDecimal(value: number): string {
+  return value.toFixed(2);
+}
+
 export function formatDate(dateStr: string) {
   if (!/^\d{8}$/.test(dateStr)) {
     throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStr}`);
@@ -51,28 +60,23 @@ export function isDayInSameYearMonth(dateStrDay: string, dateStrMonth: string) {
   return !!(periodYear === checkYear && periodMonth === checkMonth);
 }
 
-export function isFirstDayOfMonth(dateStr: string) {
-  if (!/^\d{8}$/.test(dateStr)) {
-    throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStr}`);
-  }
+export function isFirstDayOfMonth(dateStr: string, period: string) {
   const day = +dateStr.slice(6, 8);
   return {
     isFirstDayOfMonth: day === 1,
-    day: `${dateStr.slice(0, 4)}${dateStr.slice(4, 6)}01`,
+    day: `${period.slice(0, 4)}${period.slice(4, 6)}01`,
   };
 }
 
-export function isLastDayOfMonth(dateStr: string) {
-  if (!/^\d{8}$/.test(dateStr)) {
-    throw new ValidationError(`Date must be in the format ${SYSTEM_CONFIG.DATE_FORMAT} ${dateStr}`);
-  }
-  const year = +dateStr.slice(0, 4);
-  const month = +dateStr.slice(4, 6);
+export function isLastDayOfMonth(dateStr: string, period: string) {
   const day = +dateStr.slice(6, 8);
-  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  const periodYear = +period.slice(0, 4);
+  const periodMonth = +period.slice(4, 6);
+  const lastDayOfMonth = new Date(periodYear, periodMonth, 0).getDate();
+
   return {
     isLastDayOfMonth: day === lastDayOfMonth,
-    day: `${dateStr.slice(0, 4)}${dateStr.slice(4, 6)}${lastDayOfMonth}`,
+    day: `${period.slice(0, 4)}${period.slice(4, 6)}${lastDayOfMonth}`,
   };
 }
 
@@ -81,4 +85,11 @@ export function dateDifference(startDate: Date, endDate: Date, mark?: string): n
   console.log(`endDate`, endDate);
   const timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
   return Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+}
+
+export function getLastDayOfMonth(date: string) {
+  const year = +date.slice(0, 4);
+  const month = +date.slice(4, 6);
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  return `${date.slice(0, 4)}${date.slice(4, 6)}${lastDayOfMonth}`;
 }

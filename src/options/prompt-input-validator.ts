@@ -1,5 +1,7 @@
-import { SYSTEM_CONFIG, SYSTEM_ERRORS } from '../config/system';
+import { SYSTEM_ERRORS } from '../config/system';
 import { TransactionType } from '../entities/transaction';
+import { ValidationError } from '../error';
+import { formatDate } from '../utils/date-utils';
 
 export type ValidatorResult<T> = {
   isError: boolean;
@@ -7,9 +9,7 @@ export type ValidatorResult<T> = {
   checkedInput: T;
 };
 
-export function optionInputValidator(
-  input: string,
-): ValidatorResult<'T' | 'I' | 'P' | 'Q' | undefined> {
+export function optionInputValidator(input: string): ValidatorResult<'T' | 'I' | 'P' | 'Q' | undefined> {
   if (input === '') {
     return { isError: false, errorMessage: '', checkedInput: undefined };
   }
@@ -23,7 +23,7 @@ export function optionInputValidator(
   };
 }
 
-export function bankAccountInputValidator(
+export function addTransactionInputValidator(
   input: string,
 ): ValidatorResult<[string, string, TransactionType, number] | undefined> {
   const parts = input.trim().split(' ');
@@ -49,8 +49,7 @@ export function bankAccountInputValidator(
         checkedInput: undefined,
       };
     }
-    const transactionTypeValidator =
-      transactionTypeInputValidator(transactionType);
+    const transactionTypeValidator = transactionTypeInputValidator(transactionType);
     if (transactionTypeValidator.isError) {
       return {
         isError: true,
@@ -84,9 +83,7 @@ export function bankAccountInputValidator(
   };
 }
 
-export function interestRuleInputValidator(
-  input: string,
-): ValidatorResult<[string, string, number] | undefined> {
+export function addInterestRuleInputValidator(input: string): ValidatorResult<[string, string, number] | undefined> {
   const parts = input.trim().split(' ');
   if (parts.length === 3) {
     const date = parts[0];
@@ -122,11 +119,7 @@ export function interestRuleInputValidator(
     return {
       isError: false,
       errorMessage: '',
-      checkedInput: [
-        dateValidator.checkedInput,
-        ruleIdValidator.checkedInput,
-        rateValidator.checkedInput,
-      ],
+      checkedInput: [dateValidator.checkedInput, ruleIdValidator.checkedInput, rateValidator.checkedInput],
     };
   }
   return {
@@ -136,9 +129,7 @@ export function interestRuleInputValidator(
   };
 }
 
-export function printStatementInputValidator(
-  input: string,
-): ValidatorResult<[string, string] | undefined> {
+export function printStatementInputValidator(input: string): ValidatorResult<[string, string] | undefined> {
   const parts = input.trim().split(' ');
   if (parts.length === 2) {
     const account = parts[0];
@@ -163,10 +154,7 @@ export function printStatementInputValidator(
     return {
       isError: false,
       errorMessage: '',
-      checkedInput: [
-        accountValidator.checkedInput,
-        yearMonthValidator.checkedInput,
-      ],
+      checkedInput: [accountValidator.checkedInput, yearMonthValidator.checkedInput],
     };
   }
   return {
@@ -177,26 +165,27 @@ export function printStatementInputValidator(
 }
 
 export function dateInputValidator(input: string): ValidatorResult<string> {
-  const date = new Date(input);
-  if (isNaN(date.getTime())) {
+  try {
+    formatDate(input);
+    return {
+      isError: false,
+      errorMessage: '',
+      checkedInput: input,
+    };
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return {
+        isError: true,
+        errorMessage: error.message,
+        checkedInput: '',
+      };
+    }
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid date: ${input}`,
       checkedInput: '',
     };
   }
-  if (date.toISOString().split('T')[0] !== SYSTEM_CONFIG.DATE_FORMAT) {
-    return {
-      isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
-      checkedInput: '',
-    };
-  }
-  return {
-    isError: false,
-    errorMessage: '',
-    checkedInput: input,
-  };
 }
 
 export function stringInputValidator(input: string): ValidatorResult<string> {
@@ -214,13 +203,11 @@ export function stringInputValidator(input: string): ValidatorResult<string> {
   };
 }
 
-export function accountIdInputValidator(
-  input: string,
-): ValidatorResult<string> {
-  if (input.length !== SYSTEM_CONFIG.ACCOUNT_ID_LENGTH) {
+function accountIdInputValidator(input: string): ValidatorResult<string> {
+  if (typeof input !== 'string') {
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid account id: ${input}`,
       checkedInput: '',
     };
   }
@@ -231,16 +218,11 @@ export function accountIdInputValidator(
   };
 }
 
-export function transactionTypeInputValidator(
-  input: string,
-): ValidatorResult<TransactionType> {
-  if (
-    input !== TransactionType.DEPOSIT &&
-    input !== TransactionType.WITHDRAWAL
-  ) {
+function transactionTypeInputValidator(input: string): ValidatorResult<TransactionType> {
+  if (input !== TransactionType.DEPOSIT && input !== TransactionType.WITHDRAWAL) {
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid transaction type: ${input}`,
       checkedInput: TransactionType.DEPOSIT,
     };
   }
@@ -251,12 +233,12 @@ export function transactionTypeInputValidator(
   };
 }
 
-export function amountInputValidator(input: string): ValidatorResult<number> {
+function amountInputValidator(input: string): ValidatorResult<number> {
   const amount = parseFloat(input);
   if (isNaN(amount)) {
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid amount: ${input}`,
       checkedInput: 0,
     };
   }
@@ -272,14 +254,14 @@ export function rateInputValidator(input: string): ValidatorResult<number> {
   if (isNaN(rate)) {
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid rate: ${input}`,
       checkedInput: 0,
     };
   }
   if (rate < 0 || rate > 100) {
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid rate: ${input}`,
       checkedInput: 0,
     };
   }
@@ -291,28 +273,34 @@ export function rateInputValidator(input: string): ValidatorResult<number> {
   };
 }
 
-export function yearMonthInputValidator(
-  input: string,
-): ValidatorResult<string> {
-  const yearMonth = input.trim();
-  if (yearMonth.length !== 6) {
+function yearMonthInputValidator(input: string): ValidatorResult<string> {
+  try {
+    const yearMonth = input.trim();
+    if (yearMonth.length !== 6) {
+      return {
+        isError: true,
+        errorMessage: `Invalid year month: ${input}`,
+        checkedInput: '',
+      };
+    }
+    formatDate(`${yearMonth}01`);
+    return {
+      isError: false,
+      errorMessage: '',
+      checkedInput: input,
+    };
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return {
+        isError: true,
+        errorMessage: error.message,
+        checkedInput: '',
+      };
+    }
     return {
       isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
+      errorMessage: `Invalid year month: ${input}`,
       checkedInput: '',
     };
   }
-  const date = new Date(`${yearMonth}01`);
-  if (isNaN(date.getTime())) {
-    return {
-      isError: true,
-      errorMessage: SYSTEM_ERRORS.INVALID_INPUT,
-      checkedInput: '',
-    };
-  }
-  return {
-    isError: false,
-    errorMessage: '',
-    checkedInput: input,
-  };
 }

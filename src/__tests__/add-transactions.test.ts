@@ -15,17 +15,17 @@ describe('adding transactions', () => {
 
   it('should reject if the first transaction is not a deposit', () => {
     const bank = new Bank('AwesomeGIC Bank');
-    expect(() =>
-      bank.addTransaction('20210101', '1234', TransactionType.WITHDRAWAL, 1000),
-    ).toThrow('First transaction must be a deposit');
+    expect(() => bank.addTransaction('20210101', '1234', TransactionType.WITHDRAWAL, 1000)).toThrow(
+      'First transaction must be a deposit',
+    );
   });
 
   it('should reject if withdrawing more than the balance', () => {
     const bank = new Bank('AwesomeGIC Bank');
     bank.addTransaction('20210101', '1234', TransactionType.DEPOSIT, 1000);
-    expect(() =>
-      bank.addTransaction('20210102', '1234', TransactionType.WITHDRAWAL, 1001),
-    ).toThrow('Insufficient balance');
+    expect(() => bank.addTransaction('20210102', '1234', TransactionType.WITHDRAWAL, 1001)).toThrow(
+      'Insufficient balance',
+    );
   });
 
   it('should add transactions to the bank with multiple accounts', () => {
@@ -47,8 +47,17 @@ describe('adding transactions', () => {
     bank.addTransaction('20210101', '1234', TransactionType.DEPOSIT, 1000);
     bank.addTransaction('20210102', '1234', TransactionType.WITHDRAWAL, 100);
     bank.addTransaction('20210103', '1234', TransactionType.DEPOSIT, 300);
-    expect(() =>
-      bank.addTransaction('20210101', '1235', TransactionType.DEPOSIT, 100),
-    ).toThrow('Transactions must be sorted by date');
+    expect(() => bank.addTransaction('20210101', '1234', TransactionType.DEPOSIT, 100)).toThrow(
+      'Transactions must be sorted by date',
+    );
+  });
+
+  it('should allow transaction and not affect order of other accounts transactions', () => {
+    const bank = new Bank('AwesomeGIC Bank');
+    bank.addTransaction('20210101', '1234', TransactionType.DEPOSIT, 1000);
+    bank.addTransaction('20210102', '1234', TransactionType.WITHDRAWAL, 100);
+    bank.addTransaction('20210103', '1234', TransactionType.DEPOSIT, 300);
+    bank.addTransaction('20200104', '1235', TransactionType.DEPOSIT, 100);
+    bank.addTransaction('20200105', '1235', TransactionType.DEPOSIT, 100);
   });
 });

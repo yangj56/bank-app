@@ -3,8 +3,8 @@ import { Bank } from './entities/bank';
 import { SystemError } from './error';
 import { inputQuestionRepromptor, rl } from './options/prompt-input-helper';
 import {
-  bankAccountInputValidator,
-  interestRuleInputValidator,
+  addInterestRuleInputValidator,
+  addTransactionInputValidator,
   optionInputValidator,
   printStatementInputValidator,
 } from './options/prompt-input-validator';
@@ -31,7 +31,7 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
         case 'T': {
           const input = await inputQuestionRepromptor(
             `Please enter transaction details in <Date> <Account> <Type> <Amount> format\n${SYSTEM_CONFIG.GO_BACK_STATEMENT}`,
-            bankAccountInputValidator,
+            addTransactionInputValidator,
           );
           if (input) {
             try {
@@ -49,7 +49,7 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
         case 'I': {
           const input = await inputQuestionRepromptor(
             `Please enter interest rules details in <Date> <RuleId> <Rate in %> format\n${SYSTEM_CONFIG.GO_BACK_STATEMENT}`,
-            interestRuleInputValidator,
+            addInterestRuleInputValidator,
           );
           if (input) {
             bank.addInterestRule(...input);
@@ -62,7 +62,9 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
             printStatementInputValidator,
           );
           if (input) {
-            bank.printStatement(...input);
+            const result = bank.calculatePeriodInterest(...input);
+
+            console.log(`Interest for ${input[0]} in ${input[1]} is ${result}`);
           }
           break;
         }
@@ -71,9 +73,7 @@ async function promptBankingOptions(bank: Bank): Promise<void> {
           break;
       }
     }
-    console.log(
-      `Thank you for banking with ${SYSTEM_CONFIG.SYSTEM_NAME}.\nHave a nice day!`,
-    );
+    console.log(`Thank you for banking with ${SYSTEM_CONFIG.SYSTEM_NAME}.\nHave a nice day!`);
     rl.close();
   } catch (error) {
     console.error(error);
